@@ -1,6 +1,7 @@
 package icu.cavalry.frp.plugin.bridge;
 
 import android.os.Build;
+import android.util.Log;
 
 import java.io.*;
 import java.util.List;
@@ -12,6 +13,8 @@ public class FrpThread extends Thread {
     private final Map<String, String> envp; // 环境变量
     private final OutputCallback outputCallback; // 输出回调
 
+    private static final String TAG = "FrpThread";
+
     private Process process; // 进程对象
 
     protected interface OutputCallback {
@@ -19,8 +22,8 @@ public class FrpThread extends Thread {
     }
 
     protected FrpThread(List<String> command, File dir, Map<String, String> envp, OutputCallback callback) {
-        this.command = command;
-        this.dir = dir;
+        this.command = command; // 命令行参数
+        this.dir = dir; // 执行命令的目录
         this.envp = envp;
         this.outputCallback = callback;
     }
@@ -47,23 +50,36 @@ public class FrpThread extends Thread {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while (!isInterrupted() && (line = reader.readLine()) != null) {
+                    if (line.contains("[I]")) {
+                        Log.i(TAG, line);
+                    } else if (line.contains("[W]")) {
+                        Log.w(TAG, line);
+                    } else if (line.contains("[E]")) {
+                        Log.e(TAG, line);
+                    } else if (line.contains("[D]")) {
+                        Log.d(TAG, line);
+                    } else {
+                        Log.i(TAG, line);
+                    }
                     outputCallback.onOutput(line);
                 }
             } catch (InterruptedIOException e) {
                 outputCallback.onOutput("Thread interrupted: " + e.getMessage());
+                Log.e(TAG, "Thread interrupted: " + e.getMessage());
+                stopProcess();
             }
 
             int exitCode = process.waitFor();
             outputCallback.onOutput("Process exited with code: " + exitCode);
-
+            Log.e(TAG, "Process exited with code: " + exitCode);
         } catch (Exception e) {
             outputCallback.onOutput("Error: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            Log.e(TAG, "Error: " + e.getClass().getSimpleName() + " - " + e.getMessage());
             e.printStackTrace();
         } finally {
             stopProcess();
         }
     }
-
     public void stopProcess() {
         if (process != null) {
             try {

@@ -6,8 +6,6 @@ import android.os.Build;
 
 import org.junit.Test;
 
-import icu.cavalry.frp.plugin.config.FrpConfig;
-import icu.cavalry.frp.plugin.utils.LinuxISAPath;
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -21,15 +19,14 @@ public class ExampleUnitTest {
         assertEquals(4, 2 + 2);
     }
 
-    @Test
-    public void testPath() {
-        System.out.println("test");
-        System.out.println(LinuxISAPath.X86_64.getISAPath());
-
-        System.out.println(new FrpConfig().getLIBS() + LinuxISAPath.X86_64.getISAPath());
-        // 获取该项目路径
-        System.out.println(System.getProperty("user.dir"));
-    }
+//    @Test
+//    public void testPath() {
+//        System.out.println("test");
+//        System.out.println(LinuxISAPath.X86_64.getISAPath());
+//
+//        // 获取该项目路径
+//        System.out.println(System.getProperty("user.dir"));
+//    }
 
     @Test
     public void getPrimaryISA() {

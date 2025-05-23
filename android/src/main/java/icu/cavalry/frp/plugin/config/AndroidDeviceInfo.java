@@ -1,10 +1,14 @@
-package icu.cavalry.frp.plugin.utils;
+package icu.cavalry.frp.plugin.config;
 
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.provider.Settings;
+
+import java.io.File;
+
+import icu.cavalry.frp.plugin.utils.AndroidDeviceInfoInitException;
 
 public class AndroidDeviceInfo {
 
@@ -29,6 +33,7 @@ public class AndroidDeviceInfo {
 
     private static volatile AndroidDeviceInfo instance; // 单例
 
+
     private AndroidDeviceInfo(Context context) { // 私有化构造器实行单例模式
         this.context = context.getApplicationContext();
         this.manufacturer = Build.MANUFACTURER;
@@ -51,7 +56,9 @@ public class AndroidDeviceInfo {
 
         this.packageManager = context.getPackageManager();
 
+
     }
+
 
     public static void init(Context context) { // 初始化单例,保证只传入一次context
         if (instance == null) {
@@ -65,7 +72,7 @@ public class AndroidDeviceInfo {
 
 
     public static AndroidDeviceInfo initInfo(Context context) {
-        initInfo(context);
+        init(context);
         return instance;
     }
 
@@ -73,9 +80,9 @@ public class AndroidDeviceInfo {
      * 决定使用双重校验锁式单例而不用静态内部类的原因是构造器需要传入上下文参数，ApplicationProvider.getApplicationContext();限制在本包路径下获取。
      * @return
      */
-    public static AndroidDeviceInfo getInstance() { // 双重校验锁式单例
+    public static AndroidDeviceInfo getInstance() throws AndroidDeviceInfoInitException { // 双重校验锁式单例
         if (instance == null) {
-            throw new IllegalStateException("AndroidDeviceInfo not initialized. Call init(Context) first.");
+            throw new AndroidDeviceInfoInitException("AndroidDeviceInfo not initialized. Call init(Context) first.");
         }
         return instance;
     }
