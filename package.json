@@ -16,7 +16,7 @@
     "FrpPlugin.podspec"
   ],
   "author": "Cavalry",
-  "license": "MIT",
+  "license": "Apache 2.0",
   "repository": {
     "type": "git",
     "url": "git+https://192.168.1.10/home/cavalry/WorkSpace/frp-for-Android-plugin.git.git"
