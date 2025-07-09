@@ -13,8 +13,9 @@ interface FrpMapper {
 
 
     void start(List<String> command, File dir, Map<String, String> envp);
-    JSObject stop();
+    void stop();
     JSObject restart();
-    JSObject getStatus();
+    JSObject getStatus(String mode);
     JSObject getConfig();
+    JSObject setConfig(JSObject config);
 }

@@ -12,10 +12,12 @@ public class FrpThread extends Thread {
     private final File dir; // 执行命令的目录
     private final Map<String, String> envp; // 环境变量
     private final OutputCallback outputCallback; // 输出回调
-
+    private int TID;
+// TODO: 未来将通过command该Thread是Frpc还是Frps 2025/06/12
     private static final String TAG = "FrpThread";
 
     private Process process; // 进程对象
+
 
     protected interface OutputCallback {
         void onOutput(String line);
@@ -35,6 +37,7 @@ public class FrpThread extends Thread {
 
     @Override
     public void run() {
+        TID  = android.os.Process.myTid();
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
             builder.directory(dir);
@@ -54,7 +57,7 @@ public class FrpThread extends Thread {
                         Log.i(TAG, line);
                     } else if (line.contains("[W]")) {
                         Log.w(TAG, line);
-                    } else if (line.contains("[E]")) {
+                    } else if (line.contains("[E]") ||  line.contains("Process exited") || line.contains("stopping process")) {
                         Log.e(TAG, line);
                     } else if (line.contains("[D]")) {
                         Log.d(TAG, line);
@@ -90,5 +93,9 @@ public class FrpThread extends Thread {
                 outputCallback.onOutput("Error stopping process: " + e.getMessage());
             }
         }
+    }
+
+    public int getTID() {
+        return TID;
     }
 }

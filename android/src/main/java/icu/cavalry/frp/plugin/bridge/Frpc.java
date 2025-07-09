@@ -1,14 +1,18 @@
 package icu.cavalry.frp.plugin.bridge;
 
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.IBinder;
 import android.util.Log;
 
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PluginCall;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -27,17 +31,27 @@ public class Frpc extends FrpService implements FrpService.FrpcService {
 
     private final String FrpcConfigFilePath = "/frpc";
 
+    private final String SingleConfigName = "frpc.toml";
+
     private File libFrpcso;
     private File configTomlFile;
-    public Frpc(FrpListener listener, Context context) throws PackageManager.NameNotFoundException {
-        super(listener);
+
+
+    private interface CallbackConnected {
+        void onConnected(ComponentName componentName, IBinder iBinder);
+    }
+    private interface CallbackDisconnected {
+        void onDisconnected(ComponentName componentName);
+    }
+    public Frpc(Context context) throws PackageManager.NameNotFoundException {
+        super();
         this.context = context;
         info = AndroidDeviceInfo.initInfo(context);
 //        appInfo = context.getApplicationInfo();
           try {
               appInfo = info.getPackageManager().getApplicationInfo(info.getPackageName(), PackageManager.GET_SHARED_LIBRARY_FILES);  // 获取 frpc 运行libs目录前获取 ApplicationInfo
               libFrpcso = new File(appInfo.nativeLibraryDir, "libfrpc.so");
-              configTomlFile = new File(context.getFilesDir(), "frpc.toml"); // 获取 frpc 运行的配置文件
+              configTomlFile = new File(context.getFilesDir(), SingleConfigName); // 获取 frpc 运行的配置文件
           }catch (Exception e){
               Log.d(TAG, "初始化获取ApplicationInfo失败:" + e.getMessage());
               e.printStackTrace();
@@ -52,63 +66,7 @@ public class Frpc extends FrpService implements FrpService.FrpcService {
         return value;
     }
 
-    public JSObject testStartFrpc() {
-        JSObject result = new JSObject();
-        Log.d("Frpc", "开始执行 testStartFrpc()");
 
-        if (this.appInfo == null) {
-            Log.d("Frpc", "appInfo is null");
-            result.put("code", 1);
-            result.put("message", "appInfo is null");
-            return result;
-        }
-
-        String nativeLibraryDir = this.appInfo.nativeLibraryDir;
-        System.out.println(nativeLibraryDir);
-        if (nativeLibraryDir == null) {
-            Log.d("Frpc", "nativeLibraryDir is null");
-            result.put("code", 1);
-            result.put("message", "nativeLibraryDir is null");
-            return result;
-        }
-
-        File soFile = new File(nativeLibraryDir, "libfrpc.so");
-        if (!soFile.exists()) {
-            Log.d("Frpc", "libfrpc.so not found in nativeLibraryDir");
-            result.put("code", 1);
-            result.put("message", "libfrpc.so not found");
-            return result;
-        }
-
-        Log.d("Frpc", "libfrpc.so found at: " + soFile.getAbsolutePath());
-
-        try {
-            // ✅ 正确配置路径：app 私有目录 /data/data/<package>/files/frpc.toml
-            File configFile = new File(context.getFilesDir() + FrpcConfigFilePath, "frpc.toml");
-
-            List<String> command = new ArrayList<>();
-            command.add(soFile.getAbsolutePath()); // 添加 frpc 的绝对路径
-            command.add("-c");
-            command.add(configFile.getAbsolutePath());
-
-            File workingDir = new File(nativeLibraryDir);
-
-            Log.d("Frpc", "启动命令: " + String.join(" ", command));
-            Log.d("Frpc", "工作目录: " + workingDir.getAbsolutePath());
-
-//            startFrpcService(command, workingDir);
-//            start(command, this.libFrpcso.getParentFile(), null);
-            startFrpService(context, command, workingDir);
-            result.put("code", 0);
-            result.put("message", "frpc 启动测试成功");
-        } catch (Exception e) {
-            Log.d("Frpc", "启动 frpc 出错: " + e.getMessage(), e);
-            result.put("code", 1);
-            result.put("message", "启动出错: " + e.getMessage());
-        }
-
-        return result;
-    }
 
 public JSObject testStopFrpc() {
     JSObject result = new JSObject();
@@ -119,31 +77,87 @@ public JSObject testStopFrpc() {
 
 
     @Override
-    public JSObject startFrpc() throws FrpcRuntimeException{
+    public void startFrpc(PluginCall call) throws FrpcRuntimeException{
         // TODO: 拓展多配置启动，完善配置路径管理 2025.04.14
         JSObject result = new JSObject();
         // 确保 nativeLibraryDir 不为空并且路径里包含源文件 libfrpc.so
         if (verifyEvnBeforeStart()){
+            String  configName = call.getData().getString("fileName");
+            if ( configName !=  null && !configName.isEmpty()){
+                this.configTomlFile = new File(context.getFilesDir() + FrpcConfigFilePath, configName);
+            }else {
+               throw new FrpcRuntimeException("请检查文件名或指定 frpc 配置文件");
+            }
+
             ArrayList<String> command = new ArrayList<>();
             command.add(this.libFrpcso.getAbsolutePath());
             command.add("-c");
             command.add(this.configTomlFile.getAbsolutePath());
 
-//            start(command, this.libFrpcso.getParentFile(), null); // 启动命令
-//            result.put("code", 0);
-//            result.put("message", "frpc 启动成功");
            try {
-                startFrpcService(command, Objects.requireNonNull(this.libFrpcso.getParentFile()));
+               startFrpcService(command, Objects.requireNonNull(this.libFrpcso.getParentFile()));
+               Log.d(TAG, "startFrpc: 配置文件路径" + this.configTomlFile.getAbsolutePath());
+ //              start(command, this.libFrpcso.getParentFile(), null);
                 result.put("code", 1);
                 result.put("message", "frpc 启动成功");
            } catch (Exception e) {
                Log.e(TAG, "启动前台服务失败: " + e.getMessage(), e);
-               result.put("code", 0);
-               result.put("message", "启动服务失败: " + e.getMessage());
+//               result.put("code", 0);
+//               result.put("message", "启动服务失败: " + e.getMessage());
+               call.reject("启动服务失败: " + e.getMessage());
                throw e; // 继续抛,给插件notifyListeners发给js前端
            }
         }
-        return result;
+    }
+
+
+    @Override
+    public void stopFrpc(PluginCall call) throws FrpcRuntimeException{
+        try {
+            frpcForegroundService((componentName, iBinder) -> {
+                // 停止frpc
+                try {
+                    FrpcForegroundService service = ((FrpcForegroundService.LocalBinder) iBinder).getService();
+                    service.getFrpService().stop();
+                    service.onDestroy();
+                    call.resolve(new JSObject().put("code", 1).put("message", "frpc 停止成功"));
+                } catch (RuntimeException e) {
+                    Log.e(TAG, "停止前台服务失败: " + e.getMessage(), e);
+                    call.reject("停止服务失败: " + e.getMessage());
+                }
+            });
+        }catch (RuntimeException e){
+            throw new FrpcRuntimeException(e.getMessage());
+        }
+    }
+
+    @Override
+    public JSObject restartFrpc(PluginCall call) {
+        return null;
+    }
+
+    @Override
+    public void getStatus(PluginCall call) throws FrpcRuntimeException{
+       try  {
+//           String mode = call.getData().getString("mode");
+//           getFrpcServiceStatus( mode, call);
+           frpcForegroundService((componentName, iBinder) -> {
+               try {
+                   String mode = call.getData().getString("mode");
+                   FrpcForegroundService frpcService = ((FrpcForegroundService.LocalBinder) iBinder).getService();
+                   FrpService internalFrpService = frpcService.getFrpService();
+                   JSObject status = internalFrpService.getStatus(mode);
+                   call.resolve(status);
+               } catch (RuntimeException e) {
+                   Log.e(TAG, "获取服务状态失败: " + e.getMessage(), e);
+                   call.reject(e.getMessage());
+               }
+           });
+
+       } catch (RuntimeException e) {
+//           call.reject(e.getMessage());
+           throw new FrpcRuntimeException(e.getMessage());
+       }
     }
 
     private void startFrpcService(List<String> command, File workingDirectory) {
@@ -153,23 +167,15 @@ public JSObject testStopFrpc() {
         intent.putStringArrayListExtra("command", new ArrayList<>(command));
         intent.putExtra("dir", workingDirectory.getAbsolutePath());
         Log.d(TAG, "启动前台服务: " + intent.getStringExtra("dir"));
-            // Android 8+ 必须使用 startForegroundService 启动前台服务
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Log.d(TAG, "Android 8+ 必须使用 startForegroundService 启动前台服务");
-                context.startForegroundService(intent);
-            } else {
-                Log.d(TAG, "Android 7- 使用 startService 启动前台服务");
-                context.startService(intent);
-            }
+        // Android 8+ 必须使用 startForegroundService 启动前台服务
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Log.d(TAG, "Android 8+ 必须使用 startForegroundService 启动前台服务");
+            context.startForegroundService(intent);
+        } else {
+            Log.d(TAG, "Android 7- 使用 startService 启动前台服务");
+            context.startService(intent);
+        }
 
-    }
-
-    public JSObject stopFrpc() throws FrpcRuntimeException{
-        JSObject result = new JSObject();
-            result = stop();
-            result.put("code", 0);
-            result.put("message", "frpc 停止成功");
-        return result;
     }
 
 
@@ -186,8 +192,38 @@ public JSObject testStopFrpc() {
             Log.e(TAG, "libFrpcso not exists");
             throw new FrpcRuntimeException("libfrpc.so文件不存在!");
         }
+        if (!this.libFrpcso.canExecute()){
+            Log.e(TAG, "libFrpcso can not execute");
+            throw new FrpcRuntimeException("libfrpc.so文件不可执行!");
+        }
         return true;
     }
 
+    @Override
+    public JSObject getConfig() {
+        JSObject result = new JSObject();
+        result.put("code", 0);
+        result.put("message", "获取配置成功");
+        result.put("config", this.configTomlFile.getAbsolutePath());
+        return result;
+    }
+
+    private void frpcForegroundService(CallbackConnected callback) {
+        Intent intent = new Intent(context, FrpcForegroundService.class);
+        ServiceConnection connection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                // 服务连接成功
+                callback.onConnected(componentName, iBinder);
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+                // 服务断开连接
+            }
+        };
+        context.bindService(intent, connection, Context.BIND_AUTO_CREATE);
+//       return context.stopService(intent);
+    }
 
 }

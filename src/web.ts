@@ -9,8 +9,8 @@ export class frpWeb extends WebPlugin implements frpPlugin {
     return options;
   }
 
-  startFrpc(): Promise<{ value: string }> {
-    return Promise.reject({value: text}); // @ts-ignore
+ async startFrpc(options:{filePath: string}): Promise<{ value: string }> {
+    return Promise.reject({value: text,  filePath: options}); // @ts-ignore
   }
 
   testStartFrpc(): Promise<{ value: string }> {
@@ -28,4 +28,29 @@ export class frpWeb extends WebPlugin implements frpPlugin {
   requestIgnoreBatteryOptimizations(): Promise<{ value: boolean }> {
     return Promise.resolve({value: true});
   }
+
+  requestVpnPermission(): Promise<{ value: string }> {
+    return Promise.resolve({value: text});
+  }
+
+  requestNotificationPermission(): Promise<{ value: string }> {
+    return Promise.resolve({value: text});
+  }
+
+  openAppSettings(): Promise<{ value: string }> {
+    return Promise.resolve({value: text});
+  }
+
+  stopFrpc(): Promise<{ value: string }> {
+    return Promise.resolve({value: text});
+  }
+
+  stopDummyVpn(): Promise<{ value: string }> {
+    return Promise.resolve({value: text});
+  }
+
+  async getStatus(options: { mode: string }): Promise<{ value: string }> {
+    return Promise.resolve({value: text, options: options});
+  }
+
 }
