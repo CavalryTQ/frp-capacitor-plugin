@@ -1,7 +1,7 @@
 {
-  "name": "frp-plugin",
+  "name": "frp-capacitor-plugin",
   "version": "0.0.1",
-  "description": "Plugin provided frp for Android",
+  "description": "Plugin provided frp for Android.",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
@@ -19,10 +19,10 @@
   "license": "Apache 2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://192.168.1.10/home/cavalry/WorkSpace/frp-for-Android-plugin.git.git"
+    "url": "https://github.com/CavalryTQ/frp-capacitor-plugin.git"
   },
   "bugs": {
-    "url": "https://192.168.1.10/home/cavalry/WorkSpace/frp-for-Android-plugin.git/issues"
+    "url": "https://github.com/CavalryTQ/frp-capacitor-plugin.git"
   },
   "keywords": [
     "capacitor",

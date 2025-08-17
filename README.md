@@ -1,4 +1,4 @@
-# frp-plugin
+# frp-capacitor-plugin
 
 Plugin provided frp for Android
 
@@ -16,6 +16,7 @@ npx cap sync
 * [`echo(...)`](#echo)
 * [`startFrpc(...)`](#startfrpc)
 * [`stopFrpc()`](#stopfrpc)
+* [`getStatus(...)`](#getstatus)
 * [`testStartFrpc()`](#teststartfrpc)
 * [`startDummyVpn()`](#startdummyvpn)
 * [`stopDummyVpn()`](#stopdummyvpn)
@@ -25,6 +26,7 @@ npx cap sync
 * [`requestNotificationPermission(...)`](#requestnotificationpermission)
 * [`openAppSettings()`](#openappsettings)
 * [`addListener('frpOutput', ...)`](#addlistenerfrpoutput-)
+* [`removeAllListeners()`](#removealllisteners)
 * [Interfaces](#interfaces)
 
 </docgen-index>
@@ -67,6 +69,21 @@ startFrpc(options: { filePath: string; }) => Promise<{ value: string; }>
 ```typescript
 stopFrpc() => Promise<{ value: string; }>
 ```
+
+**Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
+
+--------------------
+
+
+### getStatus(...)
+
+```typescript
+getStatus(options: { mode: string; }) => Promise<{ value: string; }>
+```
+
+| Param         | Type                           |
+| ------------- | ------------------------------ |
+| **`options`** | <code>{ mode: string; }</code> |
 
 **Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
 
@@ -181,6 +198,15 @@ addListener(event: 'frpOutput', callback: (data: { line: string; }) => void) => 
 | **`callback`** | <code>(data: { line: string; }) =&gt; void</code> |
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### removeAllListeners()
+
+```typescript
+removeAllListeners() => Promise<void>
+```
 
 --------------------
 
